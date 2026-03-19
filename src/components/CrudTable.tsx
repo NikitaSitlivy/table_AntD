@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Card,
@@ -8,11 +8,13 @@ import {
   Popconfirm,
   Space,
   Table,
+  Tooltip,
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import type { SortOrder, SorterResult } from 'antd/es/table/interface';
 import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { INITIAL_RECORDS, SEARCH_PLACEHOLDER } from '../constants';
+import { INITIAL_RECORDS, RECORDS_STORAGE_KEY, SEARCH_PLACEHOLDER } from '../constants';
 import {
   compareByDate,
   compareByName,
@@ -27,11 +29,41 @@ import { RecordModal } from './RecordModal';
 const { Paragraph, Text, Title } = Typography;
 
 export function CrudTable() {
-  const [records, setRecords] = useState<RecordItem[]>(INITIAL_RECORDS);
+  const [records, setRecords] = useState<RecordItem[]>(() => {
+    if (typeof window === 'undefined') {
+      return INITIAL_RECORDS;
+    }
+
+    const savedRecords = window.localStorage.getItem(RECORDS_STORAGE_KEY);
+
+    if (!savedRecords) {
+      return INITIAL_RECORDS;
+    }
+
+    try {
+      const parsedRecords = JSON.parse(savedRecords) as RecordItem[];
+
+      if (!Array.isArray(parsedRecords)) {
+        return INITIAL_RECORDS;
+      }
+
+      return parsedRecords;
+    } catch {
+      return INITIAL_RECORDS;
+    }
+  });
   const [searchValue, setSearchValue] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mode, setMode] = useState<ModalMode>('create');
   const [editingRecord, setEditingRecord] = useState<RecordItem | null>(null);
+  const [sortState, setSortState] = useState<{ columnKey?: string; order?: SortOrder }>({
+    columnKey: 'date',
+    order: 'descend',
+  });
+
+  useEffect(() => {
+    window.localStorage.setItem(RECORDS_STORAGE_KEY, JSON.stringify(records));
+  }, [records]);
 
   const filteredRecords = useMemo(
     () => filterRecords(records, searchValue),
@@ -93,8 +125,15 @@ export function CrudTable() {
         key: 'name',
         width: 280,
         sorter: compareByName,
-        showSorterTooltip: { target: 'sorter-icon' },
-        ellipsis: true,
+        sortOrder: sortState.columnKey === 'name' ? sortState.order : null,
+        sortDirections: ['ascend', 'descend', 'ascend'],
+        showSorterTooltip: {
+          target: 'full-header',
+          title:
+            sortState.columnKey === 'name' && sortState.order === 'ascend'
+              ? 'Сортировать от Я до А'
+              : 'Сортировать от А до Я',
+        },
       },
       {
         title: 'Дата',
@@ -102,7 +141,9 @@ export function CrudTable() {
         key: 'date',
         width: 180,
         sorter: compareByDate,
-        defaultSortOrder: 'descend',
+        sortOrder: sortState.columnKey === 'date' ? sortState.order : null,
+        sortDirections: ['descend', 'ascend', 'descend'],
+        showSorterTooltip: { target: 'full-header' },
         render: (value: string) => formatDisplayDate(value),
       },
       {
@@ -112,6 +153,9 @@ export function CrudTable() {
         width: 220,
         align: 'right',
         sorter: compareByValue,
+        sortOrder: sortState.columnKey === 'value' ? sortState.order : null,
+        sortDirections: ['descend', 'ascend', 'descend'],
+        showSorterTooltip: { target: 'full-header' },
         render: (value: number) => new Intl.NumberFormat('ru-RU').format(value),
       },
       {
@@ -121,11 +165,13 @@ export function CrudTable() {
         fixed: 'right',
         render: (_, record) => (
           <Space size="small">
-            <Button
-              aria-label={`Редактировать ${record.name}`}
-              icon={<EditOutlined />}
-              onClick={() => openEditModal(record)}
-            />
+            <Tooltip title="Редактировать">
+              <Button
+                aria-label={`Редактировать ${record.name}`}
+                icon={<EditOutlined />}
+                onClick={() => openEditModal(record)}
+              />
+            </Tooltip>
             <Popconfirm
               title="Удалить запись?"
               description={`Запись «${record.name}» будет удалена без возможности восстановления.`}
@@ -134,13 +180,15 @@ export function CrudTable() {
               okButtonProps={{ danger: true }}
               onConfirm={() => handleDelete(record.id)}
             >
-              <Button danger aria-label={`Удалить ${record.name}`} icon={<DeleteOutlined />} />
+              <Tooltip title="Удалить">
+                <Button danger aria-label={`Удалить ${record.name}`} icon={<DeleteOutlined />} />
+              </Tooltip>
             </Popconfirm>
           </Space>
         ),
       },
     ],
-    [],
+    [sortState],
   );
 
   const locale = useMemo(
@@ -194,6 +242,14 @@ export function CrudTable() {
             columns={columns}
             dataSource={filteredRecords}
             locale={locale}
+            onChange={(_, __, sorter) => {
+              const nextSorter = Array.isArray(sorter) ? sorter[0] : (sorter as SorterResult<RecordItem>);
+
+              setSortState({
+                columnKey: typeof nextSorter.columnKey === 'string' ? nextSorter.columnKey : undefined,
+                order: nextSorter.order ?? undefined,
+              });
+            }}
             pagination={{
               pageSize: 6,
               hideOnSinglePage: filteredRecords.length <= 6,

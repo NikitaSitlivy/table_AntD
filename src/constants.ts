@@ -5,10 +5,10 @@ export const ISO_DATE_FORMAT = 'YYYY-MM-DD';
 
 export const NAME_MIN_LENGTH = 2;
 export const NAME_MAX_LENGTH = 100;
-export const MIN_VALUE = 0;
-export const MAX_VALUE = 1_000_000;
+export const MAX_VALUE_DIGITS = 15;
 
 export const SEARCH_PLACEHOLDER = 'Поиск по имени, дате или числу';
+export const RECORDS_STORAGE_KEY = 'crud-table-records';
 
 export const INITIAL_RECORDS: RecordItem[] = [
   { id: 'rec-1', name: 'Alpha Logistics', date: '2026-03-19', value: 1200 },
@@ -19,9 +19,9 @@ export const INITIAL_RECORDS: RecordItem[] = [
 
 export const VALIDATION_MESSAGES = {
   nameRequired: 'Введите имя',
-  nameWhitespace: 'Имя не может состоять только из пробелов',
   nameLength: `Имя должно содержать от ${NAME_MIN_LENGTH} до ${NAME_MAX_LENGTH} символов`,
   dateRequired: 'Выберите дату',
+  dateInvalid: 'Введите корректную дату в формате ДД.ММ.ГГГГ',
   valueRequired: 'Введите числовое значение',
-  valueRange: `Значение должно быть в диапазоне от ${MIN_VALUE} до ${MAX_VALUE}`,
+  valueDigits: `Числовое значение должно содержать не более ${MAX_VALUE_DIGITS} цифр`,
 };

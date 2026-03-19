@@ -19,8 +19,18 @@ export const filterRecords = (records: RecordItem[], searchValue: string) => {
   return records.filter((record) => buildSearchableText(record).includes(query));
 };
 
+const normalizeNameForSort = (value: string) => {
+  const trimmedValue = value.trim();
+  const sanitizedValue = trimmedValue.replace(/^[^\p{L}\p{N}]+/u, '');
+
+  return sanitizedValue || trimmedValue;
+};
+
 export const compareByName = (left: RecordItem, right: RecordItem) =>
-  left.name.localeCompare(right.name, 'ru', { sensitivity: 'base' });
+  normalizeNameForSort(left.name).localeCompare(normalizeNameForSort(right.name), 'ru', {
+    sensitivity: 'base',
+    numeric: true,
+  });
 
 export const compareByDate = (left: RecordItem, right: RecordItem) =>
   dayjs(left.date).valueOf() - dayjs(right.date).valueOf();

@@ -1,11 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
-
 :root {
   color: #0f172a;
   background:
     radial-gradient(circle at top left, rgba(20, 184, 166, 0.15), transparent 28%),
     linear-gradient(180deg, #f4fbfa 0%, #eef4fb 100%);
-  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  font-family:
+    'Segoe UI Variable', 'Segoe UI', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
 }
 
 * {
@@ -77,6 +76,14 @@ body {
 
 .w-full {
   width: 100%;
+}
+
+.form-required-mark {
+  margin-left: 4px;
+  color: #ff4d4f;
+  font-size: 12px;
+  line-height: 1;
+  vertical-align: super;
 }
 
 .ant-table-wrapper .ant-table {

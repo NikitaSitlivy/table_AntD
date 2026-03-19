@@ -1,11 +1,12 @@
-import { useEffect } from 'react';
-import { Button, DatePicker, Form, Input, InputNumber, Modal } from 'antd';
+import { useEffect, useMemo } from 'react';
+import { Button, DatePicker, Form, Input, Modal } from 'antd';
+import ruRU from 'antd/es/date-picker/locale/ru_RU';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import {
+  DATE_FORMAT,
   ISO_DATE_FORMAT,
-  MAX_VALUE,
-  MIN_VALUE,
+  MAX_VALUE_DIGITS,
   NAME_MAX_LENGTH,
   NAME_MIN_LENGTH,
   VALIDATION_MESSAGES,
@@ -15,7 +16,7 @@ import type { ModalMode, RecordFormValues } from '../types';
 type RecordModalFormValues = {
   name: string;
   date: Dayjs;
-  value: number;
+  value: string;
 };
 
 type RecordModalProps = {
@@ -37,8 +38,19 @@ const modalMeta: Record<ModalMode, { title: string; okText: string }> = {
   },
 };
 
+const sanitizeDigits = (value: string) => value.replace(/\D/g, '');
+
+const datePickerLocale = {
+  ...ruRU,
+  lang: {
+    ...ruRU.lang,
+    placeholder: 'ДД.ММ.ГГГГ',
+  },
+};
+
 export function RecordModal({ open, mode, initialValues, onCancel, onSubmit }: RecordModalProps) {
   const [form] = Form.useForm<RecordModalFormValues>();
+  const watchedValues = Form.useWatch([], form) as Partial<RecordModalFormValues> | undefined;
 
   useEffect(() => {
     if (!open) {
@@ -50,7 +62,7 @@ export function RecordModal({ open, mode, initialValues, onCancel, onSubmit }: R
       form.setFieldsValue({
         name: initialValues.name,
         date: dayjs(initialValues.date),
-        value: initialValues.value,
+        value: String(initialValues.value),
       });
       return;
     }
@@ -58,17 +70,46 @@ export function RecordModal({ open, mode, initialValues, onCancel, onSubmit }: R
     form.resetFields();
   }, [form, initialValues, open]);
 
+  useEffect(() => {
+    if (!open || !initialValues) {
+      return;
+    }
+
+    form.setFieldsValue({
+      name: initialValues.name,
+      date: dayjs(initialValues.date),
+      value: String(initialValues.value),
+    });
+  }, [form, initialValues, open]);
+
   const handleFinish = (values: RecordModalFormValues) => {
     onSubmit({
       name: values.name.trim(),
       date: values.date.format(ISO_DATE_FORMAT),
-      value: values.value,
+      value: Number(values.value),
     });
   };
+
+  const isUpdateDisabled = useMemo(() => {
+    if (mode !== 'edit' || !initialValues) {
+      return false;
+    }
+
+    const currentName = watchedValues?.name?.trim() ?? '';
+    const currentDate = watchedValues?.date?.isValid() ? watchedValues.date.format(ISO_DATE_FORMAT) : '';
+    const currentValue = watchedValues?.value ?? '';
+
+    return (
+      currentName === initialValues.name &&
+      currentDate === initialValues.date &&
+      currentValue === String(initialValues.value)
+    );
+  }, [initialValues, mode, watchedValues]);
 
   return (
     <Modal
       destroyOnHidden
+      forceRender
       open={open}
       title={modalMeta[mode].title}
       onCancel={onCancel}
@@ -76,7 +117,12 @@ export function RecordModal({ open, mode, initialValues, onCancel, onSubmit }: R
         <Button key="cancel" onClick={onCancel}>
           Отмена
         </Button>,
-        <Button key="submit" type="primary" onClick={() => form.submit()}>
+        <Button
+          key="submit"
+          type="primary"
+          disabled={isUpdateDisabled}
+          onClick={() => form.submit()}
+        >
           {modalMeta[mode].okText}
         </Button>,
       ]}
@@ -87,18 +133,28 @@ export function RecordModal({ open, mode, initialValues, onCancel, onSubmit }: R
         preserve={false}
         autoComplete="off"
         onFinish={handleFinish}
+        requiredMark={(label, info) =>
+          info.required ? (
+            <span>
+              {label}
+              <span className="form-required-mark">*</span>
+            </span>
+          ) : (
+            label
+          )
+        }
       >
         <Form.Item
+          required
           label="Имя"
           name="name"
           rules={[
-            { required: true, message: VALIDATION_MESSAGES.nameRequired },
             {
               validator: async (_, value: string | undefined) => {
                 const normalizedValue = value?.trim() ?? '';
 
                 if (!normalizedValue) {
-                  throw new Error(VALIDATION_MESSAGES.nameWhitespace);
+                  throw new Error(VALIDATION_MESSAGES.nameRequired);
                 }
 
                 if (
@@ -115,32 +171,56 @@ export function RecordModal({ open, mode, initialValues, onCancel, onSubmit }: R
         </Form.Item>
 
         <Form.Item
+          required
           label="Дата"
           name="date"
-          rules={[{ required: true, message: VALIDATION_MESSAGES.dateRequired }]}
-        >
-          <DatePicker className="w-full" format="DD.MM.YYYY" style={{ width: '100%' }} />
-        </Form.Item>
-
-        <Form.Item
-          label="Числовое значение"
-          name="value"
           rules={[
-            { required: true, message: VALIDATION_MESSAGES.valueRequired },
+            { required: true, message: VALIDATION_MESSAGES.dateRequired },
             {
-              type: 'number',
-              min: MIN_VALUE,
-              max: MAX_VALUE,
-              message: VALIDATION_MESSAGES.valueRange,
+              validator: async (_, value: Dayjs | undefined) => {
+                if (!value) {
+                  return;
+                }
+
+                if (!value.isValid()) {
+                  throw new Error(VALIDATION_MESSAGES.dateInvalid);
+                }
+              },
             },
           ]}
         >
-          <InputNumber
+          <DatePicker
             className="w-full"
-            min={MIN_VALUE}
-            max={MAX_VALUE}
-            precision={0}
+            format={DATE_FORMAT}
+            locale={datePickerLocale}
+            placeholder="ДД.ММ.ГГГГ"
             style={{ width: '100%' }}
+          />
+        </Form.Item>
+
+        <Form.Item
+          required
+          label="Числовое значение"
+          name="value"
+          getValueFromEvent={(event) => sanitizeDigits(event.target.value).slice(0, MAX_VALUE_DIGITS + 1)}
+          rules={[
+            {
+              validator: async (_, value: string | undefined) => {
+                if (!value) {
+                  throw new Error(VALIDATION_MESSAGES.valueRequired);
+                }
+
+                if (value.length > MAX_VALUE_DIGITS) {
+                  throw new Error(VALIDATION_MESSAGES.valueDigits);
+                }
+              },
+            },
+          ]}
+        >
+          <Input
+            className="w-full"
+            inputMode="numeric"
+            maxLength={MAX_VALUE_DIGITS + 1}
             placeholder="Введите число"
           />
         </Form.Item>
