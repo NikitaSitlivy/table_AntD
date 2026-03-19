@@ -56,6 +56,7 @@ export function CrudTable() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mode, setMode] = useState<ModalMode>('create');
   const [editingRecord, setEditingRecord] = useState<RecordItem | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [sortState, setSortState] = useState<{ columnKey?: string; order?: SortOrder }>({
     columnKey: 'date',
     order: 'descend',
@@ -242,15 +243,23 @@ export function CrudTable() {
             columns={columns}
             dataSource={filteredRecords}
             locale={locale}
-            onChange={(_, __, sorter) => {
+            onChange={(pagination, __, sorter) => {
               const nextSorter = Array.isArray(sorter) ? sorter[0] : (sorter as SorterResult<RecordItem>);
+              const nextColumnKey =
+                typeof nextSorter.columnKey === 'string' ? nextSorter.columnKey : undefined;
+              const nextOrder = nextSorter.order ?? undefined;
+              const shouldResetPage =
+                nextColumnKey !== sortState.columnKey || nextOrder !== sortState.order;
 
               setSortState({
-                columnKey: typeof nextSorter.columnKey === 'string' ? nextSorter.columnKey : undefined,
-                order: nextSorter.order ?? undefined,
+                columnKey: nextColumnKey,
+                order: nextOrder,
               });
+
+              setCurrentPage(shouldResetPage ? 1 : (pagination.current ?? 1));
             }}
             pagination={{
+              current: currentPage,
               pageSize: 6,
               hideOnSinglePage: filteredRecords.length <= 6,
               showSizeChanger: false,
