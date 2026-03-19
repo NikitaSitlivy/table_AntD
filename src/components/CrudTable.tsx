@@ -27,6 +27,15 @@ import type { ModalMode, RecordFormValues, RecordItem } from '../types';
 import { RecordModal } from './RecordModal';
 
 const { Paragraph, Text, Title } = Typography;
+const actionTooltipProps = {
+  destroyOnHidden: true,
+  mouseLeaveDelay: 0,
+  styles: {
+    root: {
+      pointerEvents: 'none',
+    },
+  },
+} as const;
 
 export function CrudTable() {
   const [records, setRecords] = useState<RecordItem[]>(() => {
@@ -166,7 +175,7 @@ export function CrudTable() {
         fixed: 'right',
         render: (_, record) => (
           <Space size="small">
-            <Tooltip title="Редактировать">
+            <Tooltip title="Редактировать" {...actionTooltipProps}>
               <Button
                 aria-label={`Редактировать ${record.name}`}
                 icon={<EditOutlined />}
@@ -181,7 +190,7 @@ export function CrudTable() {
               okButtonProps={{ danger: true }}
               onConfirm={() => handleDelete(record.id)}
             >
-              <Tooltip title="Удалить">
+              <Tooltip title="Удалить" {...actionTooltipProps}>
                 <Button danger aria-label={`Удалить ${record.name}`} icon={<DeleteOutlined />} />
               </Tooltip>
             </Popconfirm>
