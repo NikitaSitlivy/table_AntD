@@ -86,6 +86,22 @@ body {
   vertical-align: super;
 }
 
+.date-field-shell {
+  position: relative;
+}
+
+.date-field-icon {
+  color: rgba(15, 23, 42, 0.45);
+  cursor: pointer;
+}
+
+.date-field-picker-anchor {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .ant-table-wrapper .ant-table {
   background: transparent;
 }

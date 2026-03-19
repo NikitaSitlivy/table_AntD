@@ -21,7 +21,7 @@ export const VALIDATION_MESSAGES = {
   nameRequired: 'Введите имя',
   nameLength: `Имя должно содержать от ${NAME_MIN_LENGTH} до ${NAME_MAX_LENGTH} символов`,
   dateRequired: 'Выберите дату',
-  dateInvalid: 'Введите корректную дату в формате ДД.ММ.ГГГГ',
+  dateInvalid: 'Введите корректную дату',
   valueRequired: 'Введите числовое значение',
   valueDigits: `Числовое значение должно содержать не более ${MAX_VALUE_DIGITS} цифр`,
 };
