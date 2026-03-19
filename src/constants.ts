@@ -6,6 +6,7 @@ export const ISO_DATE_FORMAT = 'YYYY-MM-DD';
 export const NAME_MIN_LENGTH = 2;
 export const NAME_MAX_LENGTH = 100;
 export const MAX_VALUE_DIGITS = 15;
+export const TABLE_PAGE_SIZE = 6;
 
 export const SEARCH_PLACEHOLDER = 'Поиск по имени, дате или числу';
 export const RECORDS_STORAGE_KEY = 'crud-table-records';

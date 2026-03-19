@@ -15,7 +15,12 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import type { SortOrder, SorterResult } from 'antd/es/table/interface';
 import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { INITIAL_RECORDS, RECORDS_STORAGE_KEY, SEARCH_PLACEHOLDER } from '../constants';
+import {
+  INITIAL_RECORDS,
+  RECORDS_STORAGE_KEY,
+  SEARCH_PLACEHOLDER,
+  TABLE_PAGE_SIZE,
+} from '../constants';
 import {
   compareByDate,
   compareByName,
@@ -23,6 +28,8 @@ import {
   createRecordId,
   filterRecords,
   formatDisplayDate,
+  numberFormatter,
+  parseStoredRecords,
 } from '../helpers';
 import type { ModalMode, RecordFormValues, RecordItem } from '../types';
 import { RecordModal } from './RecordModal';
@@ -47,20 +54,9 @@ export function CrudTable() {
       return INITIAL_RECORDS;
     }
 
-    const savedRecords = window.localStorage.getItem(RECORDS_STORAGE_KEY);
-
-    if (!savedRecords) {
-      return INITIAL_RECORDS;
-    }
-
     try {
-      const parsedRecords = JSON.parse(savedRecords) as RecordItem[];
-
-      if (!Array.isArray(parsedRecords)) {
-        return INITIAL_RECORDS;
-      }
-
-      return parsedRecords;
+      const savedRecords = window.localStorage.getItem(RECORDS_STORAGE_KEY);
+      return parseStoredRecords(savedRecords, INITIAL_RECORDS);
     } catch {
       return INITIAL_RECORDS;
     }
@@ -76,7 +72,11 @@ export function CrudTable() {
   });
 
   useEffect(() => {
-    window.localStorage.setItem(RECORDS_STORAGE_KEY, JSON.stringify(records));
+    try {
+      window.localStorage.setItem(RECORDS_STORAGE_KEY, JSON.stringify(records));
+    } catch {
+      // Ignore storage write errors to keep the table usable in restricted environments.
+    }
   }, [records]);
 
   const filteredRecords = useMemo(
@@ -85,6 +85,14 @@ export function CrudTable() {
   );
 
   const hasActiveSearch = searchValue.trim().length > 0;
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(filteredRecords.length / TABLE_PAGE_SIZE));
+
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, filteredRecords.length]);
 
   const openCreateModal = () => {
     setMode('create');
@@ -170,7 +178,7 @@ export function CrudTable() {
         sortOrder: sortState.columnKey === 'value' ? sortState.order : null,
         sortDirections: ['descend', 'ascend', 'descend'],
         showSorterTooltip: { target: 'full-header' },
-        render: (value: number) => new Intl.NumberFormat('ru-RU').format(value),
+        render: (value: number) => numberFormatter.format(value),
       },
       {
         title: 'Действия',
@@ -272,8 +280,8 @@ export function CrudTable() {
             }}
             pagination={{
               current: currentPage,
-              pageSize: 6,
-              hideOnSinglePage: filteredRecords.length <= 6,
+              pageSize: TABLE_PAGE_SIZE,
+              hideOnSinglePage: filteredRecords.length <= TABLE_PAGE_SIZE,
               showSizeChanger: false,
             }}
             rowKey="id"
