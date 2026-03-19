@@ -4,6 +4,7 @@ import {
   Card,
   Empty,
   Flex,
+  Grid,
   Input,
   Popconfirm,
   Space,
@@ -27,6 +28,7 @@ import type { ModalMode, RecordFormValues, RecordItem } from '../types';
 import { RecordModal } from './RecordModal';
 
 const { Paragraph, Text, Title } = Typography;
+const { useBreakpoint } = Grid;
 const actionTooltipProps = {
   destroyOnHidden: true,
   mouseLeaveDelay: 0,
@@ -38,6 +40,8 @@ const actionTooltipProps = {
 } as const;
 
 export function CrudTable() {
+  const screens = useBreakpoint();
+  const isCompactScreen = !screens.md;
   const [records, setRecords] = useState<RecordItem[]>(() => {
     if (typeof window === 'undefined') {
       return INITIAL_RECORDS;
@@ -133,7 +137,7 @@ export function CrudTable() {
         title: 'Имя',
         dataIndex: 'name',
         key: 'name',
-        width: 280,
+        width: isCompactScreen ? 220 : 280,
         sorter: compareByName,
         sortOrder: sortState.columnKey === 'name' ? sortState.order : null,
         sortDirections: ['ascend', 'descend', 'ascend'],
@@ -149,7 +153,7 @@ export function CrudTable() {
         title: 'Дата',
         dataIndex: 'date',
         key: 'date',
-        width: 180,
+        width: isCompactScreen ? 160 : 180,
         sorter: compareByDate,
         sortOrder: sortState.columnKey === 'date' ? sortState.order : null,
         sortDirections: ['descend', 'ascend', 'descend'],
@@ -160,7 +164,7 @@ export function CrudTable() {
         title: 'Числовое значение',
         dataIndex: 'value',
         key: 'value',
-        width: 220,
+        width: isCompactScreen ? 180 : 220,
         align: 'right',
         sorter: compareByValue,
         sortOrder: sortState.columnKey === 'value' ? sortState.order : null,
@@ -171,8 +175,7 @@ export function CrudTable() {
       {
         title: 'Действия',
         key: 'actions',
-        width: 140,
-        fixed: 'right',
+        width: isCompactScreen ? 120 : 140,
         render: (_, record) => (
           <Space size="small">
             <Tooltip title="Редактировать" {...actionTooltipProps}>
@@ -198,7 +201,7 @@ export function CrudTable() {
         ),
       },
     ],
-    [sortState],
+    [isCompactScreen, sortState],
   );
 
   const locale = useMemo(
@@ -274,7 +277,8 @@ export function CrudTable() {
               showSizeChanger: false,
             }}
             rowKey="id"
-            scroll={{ x: 820 }}
+            className="responsive-table"
+            scroll={{ x: 'max-content' }}
           />
         </Flex>
       </Card>

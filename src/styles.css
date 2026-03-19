@@ -115,6 +115,15 @@ body {
   vertical-align: middle;
 }
 
+.responsive-table .ant-table-container {
+  overflow-x: auto;
+}
+
+.responsive-table .ant-table-thead > tr > th,
+.responsive-table .ant-table-tbody > tr > td {
+  white-space: nowrap;
+}
+
 @media (max-width: 768px) {
   .page-shell {
     padding: 18px 12px;
@@ -134,5 +143,10 @@ body {
 
   .search-input {
     width: 100%;
+  }
+
+  .responsive-table .ant-table-thead > tr > th,
+  .responsive-table .ant-table-tbody > tr > td {
+    padding: 12px 10px;
   }
 }
